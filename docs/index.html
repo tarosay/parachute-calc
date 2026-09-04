@@ -1,1 +1,608 @@
-Calculate parachute size from payload weight and target descent speed.
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>缶サット用パラシュート設計</title>
+  <meta name="theme-color" content="#0078d7">
+  <link rel="icon" type="image/png" sizes="32x32" href="image/icon32.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="image/icon64.png">
+  <link rel="icon" type="image/png" sizes="128x128" href="image/icon128.png">
+  <link rel="icon" type="image/png" sizes="256x256" href="image/icon256.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="image/icon512.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="image/icon1024.png">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f5f5f5;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 10px;
+      font-size: 1.6rem;
+    }
+    .note {
+      text-align: center;
+      font-size: 0.9rem;
+      color: #666;
+      margin-bottom: 16px;
+    }
+    .brand {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .brand img {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+      background: #fff;
+    }
+
+    /* 姉妹サイトへのリンク */
+    .sisters {
+      max-width: 1100px;
+      margin: 0 auto 20px;
+    }
+    .sister {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+      padding: 10px 14px;
+      text-decoration: none;
+      color: #333;
+      border-left: 4px solid #0078d7;
+    }
+    .sister:hover { background: #f0f7fd; }
+    .sister-ico { font-size: 1.6rem; }
+    .sister strong { display: block; font-size: 0.95rem; color: #0078d7; }
+    .sister small  { display: block; font-size: 0.8rem; color: #666; }
+
+    .layout {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+      gap: 24px;
+      align-items: flex-start;
+    }
+    figure {
+      margin: 0;
+      padding: 16px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+      text-align: center;
+    }
+    figure svg { max-width: 100%; height: auto; }
+    figure figcaption {
+      margin-top: 8px;
+      font-size: 0.85rem;
+      color: #666;
+    }
+    .formula {
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px dashed #ddd;
+      text-align: left;
+      font-size: 0.85rem;
+      color: #333;
+      line-height: 1.7;
+    }
+    .formula code {
+      font-family: "SF Mono", Menlo, Consolas, monospace;
+      font-size: 0.8rem;
+    }
+    .formula u { text-decoration: none; font-weight: 600; color: #0078d7; }
+
+    form {
+      background: #fff;
+      padding: 16px 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+    }
+    fieldset {
+      border: none;
+      border-top: 1px dashed #ddd;
+      margin: 14px 0 0;
+      padding: 12px 0 0;
+    }
+    fieldset:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
+    legend {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #0078d7;
+      padding: 0;
+    }
+    .field { margin-bottom: 10px; }
+    .field label {
+      display: block;
+      font-size: 0.9rem;
+      margin-bottom: 3px;
+    }
+    .field small {
+      display: block;
+      font-size: 0.75rem;
+      color: #777;
+      margin-top: 2px;
+    }
+    .field input[type="number"],
+    .field input[type="text"],
+    .field input[type="datetime-local"],
+    .field select {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 6px 8px;
+      font-size: 0.95rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      background: #fff;
+    }
+    .field input[type="range"] { width: 100%; margin-top: 4px; }
+    .row { display: flex; gap: 8px; }
+    .row > * { flex: 1; min-width: 0; }
+
+    .solve {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .solve label {
+      flex: 1;
+      text-align: center;
+      font-size: 0.8rem;
+      padding: 6px 4px;
+      border: 1px solid #ccc;
+      border-radius: 999px;
+      cursor: pointer;
+      background: #fafafa;
+    }
+    .solve input { display: none; }
+    .solve input:checked + span {
+      color: #fff;
+    }
+    .solve label:has(input:checked) {
+      background: #0078d7;
+      border-color: #0078d7;
+      color: #fff;
+    }
+
+    .buttons { display: flex; gap: 8px; margin-top: 12px; }
+    button {
+      flex: 1;
+      padding: 8px 10px;
+      font-size: 0.95rem;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+    }
+    #calcBtn  { background: #0078d7; color: #fff; }
+    #resetBtn { background: #e0e0e0; color: #333; }
+    #fetchBtn {
+      background: #eaf4fd; color: #0078d7; border: 1px solid #b8dcf7;
+      padding: 6px 10px; font-size: 0.85rem; flex: none; width: 100%;
+    }
+
+    /* 結果は入力欄の下ではなく、全幅のカード群に並べる */
+    .results {
+      max-width: 1100px;
+      margin: 24px auto 0;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      /* 地図が 2 列を占めるので、空いた枠は後ろのカードで埋める */
+      grid-auto-flow: row dense;
+      gap: 16px;
+      align-items: start;
+    }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+      padding: 14px 16px;
+      font-size: 0.9rem;
+      line-height: 1.7;
+      box-sizing: border-box;
+    }
+    .card > strong {
+      display: block;
+      color: #0078d7;
+      font-size: 0.9rem;
+      margin-bottom: 4px;
+    }
+    #mapCard { grid-column: span 2; }
+    #result strong { font-size: 1.05rem; }
+    .big {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #0078d7;
+    }
+    .warn {
+      margin-top: 8px;
+      color: #c65c00;
+      font-size: 0.82rem;
+      line-height: 1.6;
+    }
+    .warn p { margin: 4px 0; }
+    .ok { color: #2e7d32; font-size: 0.85rem; }
+    .err { color: #c00; }
+
+    table.out {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      margin-top: 6px;
+    }
+    table.out th, table.out td {
+      text-align: left;
+      padding: 3px 4px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    table.out th { color: #666; font-weight: 400; white-space: nowrap; }
+    table.out td { text-align: right; font-variant-numeric: tabular-nums; }
+
+    #map {
+      height: 320px;
+      margin-top: 10px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+    }
+    .maprow { display: flex; gap: 6px; margin-top: 8px; }
+    .maprow button {
+      flex: 1; font-size: 0.8rem; padding: 5px;
+      background: #f0f0f0; color: #333;
+    }
+    .maprow button.on { background: #0078d7; color: #fff; }
+
+    details.adv summary {
+      cursor: pointer;
+      font-size: 0.85rem;
+      color: #0078d7;
+      padding: 4px 0;
+    }
+
+    /* 計算結果を一瞬ハイライトする */
+    #result.highlight {
+      background: #fff7c2;
+      transition: background 1.2s ease;
+    }
+
+    .tips {
+      max-width: 1100px;
+      margin: 24px auto 0;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+      padding: 16px 20px;
+      font-size: 0.88rem;
+      line-height: 1.8;
+    }
+    .tips h2 { font-size: 1rem; color: #0078d7; margin: 0 0 8px; }
+    .tips h3 { font-size: 0.9rem; margin: 14px 0 4px; }
+    .tips ul { margin: 4px 0; padding-left: 1.2em; }
+    footer {
+      max-width: 1100px;
+      margin: 20px auto 0;
+      font-size: 0.75rem;
+      color: #888;
+      text-align: center;
+      line-height: 1.8;
+    }
+    footer a { color: #888; }
+
+    @media (max-width: 1000px) {
+      .results { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      #mapCard { grid-column: span 2; }
+    }
+    @media (max-width: 800px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 700px) {
+      .results { grid-template-columns: 1fr; }
+      #mapCard { grid-column: auto; }
+    }
+  </style>
+</head>
+<body>
+  <div class="brand">
+    <img src="image/icon256.png" alt="" onerror="this.style.display='none'">
+    <h1>缶サット用パラシュート設計</h1>
+  </div>
+  <p class="note">
+    宇宙甲子園 近畿地方大会 缶サット部門の規定に合わせた既定値が入っています。
+    値を変えると、その場で計算し直します。
+  </p>
+
+  <div class="sisters">
+    <a class="sister" href="https://tarosay.github.io/rocket_cp_calculator/">
+      <span class="sister-ico">🚀</span>
+      <span>
+        <strong>モデルロケット空力中心 (Cp) 計算</strong>
+        <small>フィンの位置と大きさから、機体がまっすぐ飛ぶかを確かめる</small>
+      </span>
+    </a>
+  </div>
+
+  <div class="layout">
+    <!-- 図と理論式 -->
+    <figure>
+      <div id="diagram"></div>
+      <figcaption>
+        入力した値で図が変わります。左が上から見たところ、右が横から見たところです。
+      </figcaption>
+
+      <div class="formula">
+        <strong>使っている式</strong><br><br>
+
+        <u>空気密度（湿り空気）</u><br>
+        p<sub>sat</sub> = 610.78 &times; exp( 17.27 T / (T + 237.3) ) &nbsp;[Pa]<br>
+        p<sub>v</sub> = RH/100 &times; p<sub>sat</sub><br>
+        ρ = (p − p<sub>v</sub>)/(287.058 T<sub>K</sub>) + p<sub>v</sub>/(461.495 T<sub>K</sub>)<br><br>
+
+        <u>傘の面積</u><br>
+        S<sub>canopy</sub> = (π/4) D² &nbsp;&nbsp;（円形。D は直径）<br>
+        S<sub>canopy</sub> = (√2/2) D² &nbsp;（正八角形。D は対角）<br>
+        S<sub>vent</sub> = (π/4) d² &nbsp;&nbsp;（中央の穴）<br>
+        S<sub>eff</sub> = S<sub>canopy</sub> − S<sub>vent</sub><br><br>
+
+        <u>終端降下速度</u><br>
+        v = √( 2 m g / (ρ · C<sub>d</sub> · S<sub>eff</sub>) )<br>
+        逆に解くと S<sub>eff</sub> = 2 m g / (ρ · C<sub>d</sub> · v²)<br><br>
+
+        <u>正八角形の寸法（対角 D から）</u><br>
+        一辺 a = D · sin(π/8) = 0.382683 D<br>
+        対辺 W = D · cos(π/8) = 0.923880 D &nbsp;← 切り出す正方形の一辺<br><br>
+
+        <u>降下と風</u><br>
+        t = h / v &nbsp;&nbsp;（降下時間）<br>
+        v̄ = v<sub>10</sub> · (h/10)<sup>α</sup> / (α+1) &nbsp;&nbsp; α = 0.14<br>
+        流され距離 = v̄ &times; t<br>
+        流される方位 = 風向 + 180° <br>
+        <small style="color:#777">気象の「風向」は風が吹いてくる方位なので、流れるのは逆向きです。</small><br><br>
+
+        <u>着地点の緯度経度（平面近似）</u><br>
+        lat = lat<sub>0</sub> + (dist · cos φ) / 111320<br>
+        lon = lon<sub>0</sub> + (dist · sin φ) / (111320 · cos lat<sub>0</sub>)<br><br>
+
+        <u>布と収納</u><br>
+        布の重量 = S<sub>eff</sub> &times; 面密度<br>
+        畳んだ体積 = S<sub>eff</sub> &times; 厚み ÷ 充填率(0.5)<br>
+        缶の容積 = π (68/2)² &times; 124 ≒ 450 cm³
+      </div>
+    </figure>
+
+    <!-- 入力フォーム -->
+    <form id="pForm" autocomplete="off">
+      <fieldset>
+        <legend>1. 何を求めますか</legend>
+        <div class="solve">
+          <label><input type="radio" name="solveFor" value="diameter" checked><span>傘の大きさ</span></label>
+          <label><input type="radio" name="solveFor" value="speed"><span>落下速度</span></label>
+          <label><input type="radio" name="solveFor" value="vent"><span>穴の大きさ</span></label>
+        </div>
+        <small style="color:#777;font-size:0.75rem;">
+          傘の大きさ・落下速度・穴の大きさは 1 本の式でつながっています。
+          2 つを決めると残り 1 つが決まります。
+        </small>
+      </fieldset>
+
+      <fieldset>
+        <legend>2. 基本</legend>
+
+        <div class="field">
+          <label for="shape">形</label>
+          <select id="shape">
+            <option value="octagon" selected>正八角形</option>
+            <option value="circle">円形</option>
+          </select>
+          <small>正八角形は一枚の布から直線で切れるので作りやすいです。</small>
+        </div>
+
+        <div class="field">
+          <label for="massG">缶サットの重さ <span id="massUnit">275 g</span></label>
+          <input id="massG" type="number" step="1" min="1" value="275">
+          <input id="massRange" type="range" min="200" max="350" step="5" value="275">
+          <small>パラシュートと紐を含めた、落ちてくるもの全部の重さ。規定は 250〜300 g。</small>
+        </div>
+
+        <div class="field" data-when="diameter vent">
+          <label for="targetV">目標の落下速度 <span id="vUnit">8.0 m/s</span></label>
+          <input id="targetV" type="number" step="0.1" min="0.1" value="8">
+          <input id="vRange" type="range" min="3" max="15" step="0.1" value="8">
+          <small>規定は 5〜10 m/s。速い側にすると風に流されにくくなります。</small>
+        </div>
+
+        <div class="field" data-when="speed vent">
+          <label for="diameterMm">傘の外径 <span id="dUnit">400 mm</span></label>
+          <input id="diameterMm" type="number" step="1" min="1" value="400">
+          <input id="dRange" type="range" min="100" max="900" step="5" value="400">
+          <small>正八角形のときは対角（向かい合う角どうし）の長さです。</small>
+        </div>
+
+        <div class="field" data-when="diameter speed">
+          <label for="ventRatio">中央の穴 <span id="ventUnit">15 %</span></label>
+          <div class="row">
+            <select id="ventMode">
+              <option value="ratio" selected>外径に対する %</option>
+              <option value="mm">mm で直接</option>
+            </select>
+          </div>
+          <input id="ventRatio" type="number" step="1" min="0" max="60" value="15">
+          <input id="ventRange" type="range" min="0" max="40" step="1" value="15">
+          <input id="ventDiaMm" type="number" step="1" min="0" value="60" style="display:none">
+          <small>ゆらゆら揺れるのを抑える穴です。0（穴なし）でもかまいません。
+            穴を大きくするほど傘も大きくなります。</small>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>3. 当日の条件</legend>
+
+        <div class="field">
+          <label for="placeName">打ち上げ場所</label>
+          <input id="placeName" type="text" value="望楼の芝（串本町潮岬）">
+        </div>
+        <div class="field row">
+          <span>
+            <label for="lat">緯度</label>
+            <input id="lat" type="number" step="0.000001" value="33.437673">
+          </span>
+          <span>
+            <label for="lon">経度</label>
+            <input id="lon" type="number" step="0.000001" value="135.763131">
+          </span>
+        </div>
+        <div class="field">
+          <label for="dt">打ち上げ日時</label>
+          <input id="dt" type="datetime-local" value="2026-09-12T14:00">
+        </div>
+        <div class="field">
+          <label for="heightM">落下を始める高さ <span id="hUnit">80 m</span></label>
+          <input id="heightM" type="number" step="1" min="1" value="80">
+          <small>ロケットの頂点で放出されます。要項の予定は 70 m ですが、
+            実機の重さから計算すると 80 m 前後です。</small>
+        </div>
+
+        <div class="field">
+          <button type="button" id="fetchBtn">この場所・日時の気象を取り込む</button>
+          <small id="fetchMsg">Open-Meteo から取り込みます。取り込んだあと手で直せます。</small>
+        </div>
+
+        <div class="field row">
+          <span>
+            <label for="tempC">気温 ℃</label>
+            <input id="tempC" type="number" step="0.1" value="28">
+          </span>
+          <span>
+            <label for="pressureHpa">気圧 hPa</label>
+            <input id="pressureHpa" type="number" step="0.1" value="1010">
+          </span>
+        </div>
+        <div class="field row">
+          <span>
+            <label for="humidity">湿度 %</label>
+            <input id="humidity" type="number" step="1" min="0" max="100" value="70">
+          </span>
+          <span>
+            <label for="wind10">風速 m/s</label>
+            <input id="wind10" type="number" step="0.1" min="0" value="3">
+          </span>
+        </div>
+        <div class="field row">
+          <span>
+            <label for="windDirDeg">風向 °</label>
+            <input id="windDirDeg" type="number" step="1" min="0" max="360" value="180">
+            <small id="windDirName">南 から吹く</small>
+          </span>
+          <span>
+            <label for="weather">天気</label>
+            <input id="weather" type="text" value="—" readonly>
+          </span>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>4. 詳細</legend>
+        <details class="adv">
+          <summary>ふだんは触らなくて大丈夫です（抗力係数・布・紐）</summary>
+
+          <div class="field">
+            <label for="cd">抗力係数 C<sub>d</sub></label>
+            <input id="cd" type="number" step="0.01" min="0.01" value="0.75">
+            <small>一枚の布で作る平らな傘の目安が 0.75 です。</small>
+          </div>
+          <div class="field row">
+            <span>
+              <label for="fabricGsm">布の重さ g/m²</label>
+              <input id="fabricGsm" type="number" step="1" min="0" value="40">
+            </span>
+            <span>
+              <label for="fabricThicknessMm">布の厚み mm</label>
+              <input id="fabricThicknessMm" type="number" step="0.01" min="0" value="0.05">
+            </span>
+          </div>
+          <div class="field row">
+            <span>
+              <label for="hemMm">縫い代 mm</label>
+              <input id="hemMm" type="number" step="1" min="0" value="15">
+            </span>
+            <span>
+              <label for="lineCount">紐の本数</label>
+              <input id="lineCount" type="number" step="1" min="1" value="8">
+            </span>
+          </div>
+          <div class="field">
+            <label for="lineLenMm">紐の長さ mm（空欄なら外径の 1.2 倍）</label>
+            <input id="lineLenMm" type="number" step="1" min="1" placeholder="外径の 1.2 倍">
+          </div>
+        </details>
+      </fieldset>
+
+      <div class="buttons">
+        <button id="calcBtn" type="submit">計算して結果を見る</button>
+        <button id="resetBtn" type="button">リセット</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="results">
+    <div class="card" id="result"></div>
+    <div class="card" id="ruleCheck"></div>
+    <div class="card" id="forecast"></div>
+    <div class="card" id="mapCard"></div>
+    <div class="card" id="details"></div>
+  </div>
+
+  <div class="tips">
+    <h2>作りはじめる前に</h2>
+
+    <h3>落下速度は、規定の中でも速い側（10 m/s 寄り）が有利です</h3>
+    <p>
+      ゆっくり降りるほど長く空中にいるので、風下に大きく流されます。
+      スタッフは風上へ発射台を傾けて打ち消しますが、
+      <strong>安全規則で傾けられるのは垂直から 30 度まで</strong>です。
+      地上風が 8 m/s あるときに落下 5 m/s の傘だと、30 度以内では発射台に戻せなくなる恐れがあります。
+      また傾けるほど到達高度も下がります。規定が 5〜10 m/s と幅を持たせているのは、このためです。
+    </p>
+
+    <h3>布の目安</h3>
+    <ul>
+      <li>ポリエチレンシート（ゴミ袋など）… 約 28 g/m²、厚み 0.03 mm 前後</li>
+      <li>リップストップナイロン … 40〜70 g/m²、厚み 0.05 mm 前後</li>
+    </ul>
+
+    <h3>中央の穴の役割</h3>
+    <p>
+      穴があると空気が上に抜けて、振り子のような揺れが収まります。
+      そのかわり効く面積が減るので、同じ落下速度にするには傘を大きくする必要があります。
+      ふつうは外径の 10〜20 % です。
+    </p>
+
+    <h3>紐の長さ</h3>
+    <p>
+      外径の 1.0〜1.5 倍が目安です。短すぎると傘がきれいに開かず、長すぎると絡まります。
+    </p>
+  </div>
+
+  <footer>
+    地図: <a href="https://maps.gsi.go.jp/development/ichiran.html">地理院タイル</a>（国土地理院）<br>
+    気象: <a href="https://open-meteo.com/">Open-Meteo</a><br>
+    規定: 宇宙甲子園 2026 近畿地方大会 缶サット部門 開催要項 ／
+    安全規則: <a href="https://jar.or.jp/">日本モデルロケット協会</a>
+  </footer>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="parachuteCalc.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

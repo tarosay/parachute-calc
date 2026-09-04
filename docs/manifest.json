@@ -1,0 +1,16 @@
+{
+  "name": "缶サット用パラシュート設計",
+  "short_name": "パラシュート設計",
+  "lang": "ja",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f5f5f5",
+  "theme_color": "#0078d7",
+  "icons": [
+    { "src": "image/icon32.png", "sizes": "32x32", "type": "image/png" },
+    { "src": "image/icon64.png", "sizes": "64x64", "type": "image/png" },
+    { "src": "image/icon128.png", "sizes": "128x128", "type": "image/png" },
+    { "src": "image/icon512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "image/icon1024.png", "sizes": "1024x1024", "type": "image/png" }
+  ]
+}
