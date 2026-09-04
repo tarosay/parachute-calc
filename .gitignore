@@ -141,3 +141,6 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# ローカル確認用のツール設定（プレビューサーバの起動設定など）
+.claude/
