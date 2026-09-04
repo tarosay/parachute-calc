@@ -10,6 +10,7 @@
     { "src": "image/icon32.png", "sizes": "32x32", "type": "image/png" },
     { "src": "image/icon64.png", "sizes": "64x64", "type": "image/png" },
     { "src": "image/icon128.png", "sizes": "128x128", "type": "image/png" },
+    { "src": "image/icon256.png", "sizes": "256x256", "type": "image/png" },
     { "src": "image/icon512.png", "sizes": "512x512", "type": "image/png" },
     { "src": "image/icon1024.png", "sizes": "1024x1024", "type": "image/png" }
   ]
