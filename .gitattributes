@@ -1,0 +1,14 @@
+# このリポジトリの改行コードの扱いを固定する。
+#
+# 同じ作業フォルダを Windows の git と WSL の git の両方から触ると、
+# それぞれの core.autocrlf の設定（Windows は true、WSL は false）が食い違い、
+# 中身が同じなのに全行が書き換わったように見える差分が出る。
+# .gitattributes は core.autocrlf より優先されるので、ここで決めれば食い違わない。
+
+# テキストファイルはリポジトリ内も作業フォルダ内も LF に統一する
+* text=auto eol=lf
+
+# 画像は変換しない（バイナリなので改行の置換をされると壊れる）
+*.png binary
+*.jpg binary
+*.ico binary
