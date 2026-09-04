@@ -33,6 +33,17 @@ test('正八角形：対辺・一辺が対角から正しく出る', () => {
   assert.ok(near(r.canopyAreaM2, 2 * (Math.SQRT2 - 1) * w * w, 1e-9));
 });
 
+test('作図用の半径 R は外径の半分（円形・正八角形とも）', () => {
+  const o = P.calculate({ shape: 'octagon', massG: 275, targetV: 8, ventRatio: 15, rho: 1.225 });
+  assert.ok(near(o.circumradiusMm, o.diameterMm / 2, 1e-12));
+  // 半径 R の円に内接する正八角形の面積は 2√2 R^2
+  const R = o.circumradiusMm / 1000;
+  assert.ok(near(o.canopyAreaM2, 2 * Math.SQRT2 * R * R, 1e-9));
+
+  const c = P.calculate({ shape: 'circle', massG: 275, targetV: 8, ventRatio: 15, rho: 1.225 });
+  assert.ok(near(c.circumradiusMm, c.diameterMm / 2, 1e-12));
+});
+
 test('正八角形は同じ対角の円形より面積が小さい', () => {
   const base = { massG: 275, solveFor: 'speed', diameterMm: 500, ventRatio: 0, rho: 1.225 };
   const c = P.calculate(Object.assign({}, base, { shape: 'circle' }));

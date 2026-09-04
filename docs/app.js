@@ -126,10 +126,15 @@
 
     const isOct = r.shape === 'octagon';
     const sizeRows = isOct
-      ? '<tr><th>対辺（切り出す正方形の一辺）</th><td>' + r.acrossFlatsMm.toFixed(0) + ' mm</td></tr>' +
+      ? '<tr><th>中心から頂点まで R<br><span style="color:#999;font-size:0.75rem;">' +
+          'コンパスの半径。これで円を描き 45° ごとに 8 点</span></th><td>' +
+          r.circumradiusMm.toFixed(0) + ' mm</td></tr>' +
+        '<tr><th>対辺（切り出す正方形の一辺）</th><td>' + r.acrossFlatsMm.toFixed(0) + ' mm</td></tr>' +
         '<tr><th>一辺</th><td>' + r.octSideMm.toFixed(0) + ' mm</td></tr>' +
         '<tr><th>対角</th><td>' + r.diameterMm.toFixed(0) + ' mm</td></tr>'
-      : '<tr><th>直径</th><td>' + r.diameterMm.toFixed(0) + ' mm</td></tr>';
+      : '<tr><th>直径</th><td>' + r.diameterMm.toFixed(0) + ' mm</td></tr>' +
+        '<tr><th>半径 R<br><span style="color:#999;font-size:0.75rem;">' +
+          'コンパスの半径</span></th><td>' + r.circumradiusMm.toFixed(0) + ' mm</td></tr>';
 
     resultDiv.innerHTML =
       '<strong>結果</strong>' +
@@ -151,7 +156,12 @@
           r.lineCount + ' 本 = ' + (r.lineTotalMm / 1000).toFixed(2) + ' m</td></tr>' +
         '<tr><th>紐の目安</th><td>' + r.lineRecommendMinMm.toFixed(0) + '〜' +
           r.lineRecommendMaxMm.toFixed(0) + ' mm</td></tr>' +
-      '</table>';
+      '</table>' +
+      '<p style="margin:10px 0 0;padding-top:8px;border-top:1px dashed #eee;' +
+        'font-size:0.8rem;color:#c65c00;line-height:1.6;">' +
+        '⚠ ここに出るのは<strong>設計の目安</strong>です。実際の抗力係数は傘の膨らみ方や' +
+        '穴・紐の付け方で変わります。<strong>作ったあとは実際に落として、' +
+        '降下速度を測って確かめてください。</strong></p>';
 
     // 規定チェック
     const checks = [];
@@ -179,7 +189,7 @@
         '<tr><th>降下時間</th><td>' + r.descentTimeS.toFixed(1) + ' 秒（' +
           r.heightM.toFixed(0) + ' m から）</td></tr>' +
         '<tr><th>高さ方向に平均した風速</th><td>' + r.meanWindMs.toFixed(2) + ' m/s</td></tr>' +
-        '<tr><th>流される距離</th><td>' + r.driftM.toFixed(0) + ' m</td></tr>' +
+        '<tr><th>降下中に流される距離</th><td>' + r.driftM.toFixed(0) + ' m</td></tr>' +
         '<tr><th>流される向き</th><td>' +
           (bearing === null ? '—' : P.bearingToJa(bearing) + '（' + bearing.toFixed(0) + '°）へ') +
         '</td></tr>' +
@@ -238,6 +248,13 @@
                 '" fill="#eaf4fd" stroke="#0078d7" stroke-width="2"/>';
     }
 
+    // 作図用の半径 R を描く向き（正八角形の頂点のひとつ。右上）
+    const rAng  = -22.5 * Math.PI / 180;
+    const rTipX = cx + R * Math.cos(rAng);
+    const rTipY = cy + R * Math.sin(rAng);
+    const rLabX = cx + R * 0.70 * Math.cos(rAng);
+    const rLabY = cy + R * 0.70 * Math.sin(rAng) - 6;
+
     // 幅の寸法（円形は直径、正八角形は対辺）
     const halfW = isOct ? R * Math.cos(Math.PI / 8) : R;
     const dimY  = cy + R + 26;
@@ -270,6 +287,12 @@
 
   '<text class="ttl" x="125" y="22" text-anchor="middle">上から見たところ</text>' +
   outline +
+  // 作図用の半径 R（中心から頂点まで）
+  '<line x1="' + cx + '" y1="' + cy + '" x2="' + rTipX.toFixed(1) + '" y2="' + rTipY.toFixed(1) +
+    '" stroke="#0078d7" stroke-width="1" stroke-dasharray="3 2"/>' +
+  '<circle cx="' + cx + '" cy="' + cy + '" r="2.2" fill="#0078d7"/>' +
+  '<text class="lbl" x="' + rLabX.toFixed(1) + '" y="' + rLabY.toFixed(1) +
+    '" text-anchor="middle">R ' + r.circumradiusMm.toFixed(0) + ' mm</text>' +
   '<circle cx="' + cx + '" cy="' + cy + '" r="' + ventR.toFixed(1) +
     '" fill="#fff" stroke="#0078d7" stroke-width="1.5" stroke-dasharray="4 3"/>' +
   // 幅の寸法線
@@ -332,7 +355,11 @@
         '<button type="button" id="btnPale" class="on">地図</button>' +
         '<button type="button" id="btnPhoto">航空写真</button>' +
       '</div>' +
-      '<small style="color:#777;font-size:0.75rem;">' +
+      '<small style="color:#777;font-size:0.75rem;line-height:1.6;display:block;">' +
+        '<strong style="color:#c65c00;">放出地点を発射台の真上と仮定した予想です。</strong>' +
+        '実際にはロケットを風上へ傾けて打ち上げ、上昇中も風見効果で風上へ寄るため、' +
+        '放出地点は発射台から数十 m ずれます（地上風 4 m/s なら 25〜50 m 程度）。' +
+        'ここでは降下中に風で流される分だけを描いています。<br>' +
         '赤が予想の着地点、円は風速が ±1 m/s ぶれたときの範囲です。</small>';
 
     const lat = numOf('lat'), lon = numOf('lon');
@@ -375,7 +402,7 @@
       landMk = L.circleMarker([r.landing.lat, r.landing.lon], {
         radius: 8, color: '#c00', fillColor: '#c00', fillOpacity: 0.85,
       }).addTo(map).bindTooltip(
-        '予想着地点<br>' + r.driftM.toFixed(0) + ' m ' + P.bearingToJa(r.driftBearingDeg) + 'へ');
+        '予想着地点（放出地点＝発射台の真上と仮定）<br>降下中に ' + r.driftM.toFixed(0) + ' m ' + P.bearingToJa(r.driftBearingDeg) + 'へ');
 
       pathLn = L.polyline([[lat, lon], [r.landing.lat, r.landing.lon]],
         { color: '#c00', weight: 2, dashArray: '6 4' }).addTo(map);

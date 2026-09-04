@@ -238,6 +238,9 @@
       shapeLabel: shape.label,
       // 寸法（すべて mm）
       diameterMm:    D * 1000,
+      // 中心から頂点までの距離。布に描くときコンパスの半径になる。
+      // 正八角形は、この半径で円を描いて 45 度ごとに 8 点を取れば作図できる。
+      circumradiusMm: D * 1000 / 2,
       acrossFlatsMm: acrossFlats * 1000,
       octSideMm:     octSide === null ? null : octSide * 1000,
       ventDiaMm:     d * 1000,
